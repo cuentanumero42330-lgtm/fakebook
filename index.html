@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fakebook · Conecta con tus amigos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --fb-blue: #1877F2; --fb-blue-hover: #166fe5; --fb-bg: #f0f2f5;
+            --fb-white: #ffffff; --fb-text: #1c1e21; --fb-text-secondary: #65676b;
+            --fb-border: #e4e6eb; --fb-shadow-card: 0 1px 3px rgba(0,0,0,0.12);
+            --fb-radius: 8px; --fb-nav-height: 56px; --fb-input-bg: #f0f2f5;
+            --fb-hover-bg: #f0f2f5; --fb-icon-bg: #e4e6eb; --fb-icon-color: #1c1e21;
+            --fb-comment-bg: #f0f2f5; --fb-chat-body-bg: #f0f2f5;
+            --fb-chat-msg-received: #e4e6eb; --fb-sidebar-item-hover: #e4e6eb;
+            --fb-sidebar-active-bg: #e7f3ff; --fb-nav-bg: #ffffff;
+            --fb-dropdown-bg: #ffffff; --transition: 0.15s ease;
+            --sidebar-width: 280px; --right-sidebar-width: 280px;
+            --admin-red: #e41e3f;
+        }
+        body.dark-mode {
+            --fb-bg: #18191a; --fb-white: #242526; --fb-text: #e4e6eb;
+            --fb-text-secondary: #b0b3b8; --fb-border: #3e4042;
+            --fb-shadow-card: 0 1px 3px rgba(0,0,0,0.4); --fb-input-bg: #3a3b3c;
+            --fb-hover-bg: #3a3b3c; --fb-icon-bg: #3a3b3c; --fb-icon-color: #e4e6eb;
+            --fb-comment-bg: #3a3b3c; --fb-chat-body-bg: #242526;
+            --fb-chat-msg-received: #3a3b3c; --fb-sidebar-item-hover: #3a3b3c;
+            --fb-sidebar-active-bg: #263951; --fb-nav-bg: #242526; --fb-dropdown-bg: #242526;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:var(--fb-bg); color:var(--fb-text); min-height:100vh; line-height:1.5; -webkit-font-smoothing:antialiased; transition:background 0.3s,color 0.3s; }
+        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#bcc0c4; border-radius:3px; }
+
+        .auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--fb-bg); display:flex; align-items:center; justify-content:center; z-index:9999; animation:fadeIn 0.3s ease; }
+        .auth-box { background:var(--fb-white); border-radius:8px; padding:30px; box-shadow:0 2px 15px rgba(0,0,0,0.2); width:100%; max-width:420px; animation:slideUp 0.3s ease; }
+        .auth-box h2 { font-size:24px; margin-bottom:20px; text-align:center; color:var(--fb-blue); }
+        .auth-input { width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--fb-border); background:var(--fb-input-bg); font-size:15px; outline:none; color:var(--fb-text); transition:border-color var(--transition); }
+        .auth-input:focus { border-color:var(--fb-blue); }
+        .auth-btn { width:100%; padding:12px; border-radius:8px; border:none; background:var(--fb-blue); color:#fff; font-weight:600; font-size:16px; cursor:pointer; margin-top:8px; transition:background var(--transition),transform var(--transition); }
+        .auth-btn:hover { background:var(--fb-blue-hover); transform:scale(1.02); }
+        .auth-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+        .auth-link { text-align:center; margin-top:12px; color:var(--fb-blue); cursor:pointer; transition:color var(--transition); }
+        .auth-link:hover { text-decoration:underline; }
+        .auth-error { color:var(--admin-red); text-align:center; margin-bottom:10px; font-size:14px; }
+
+        .fb-nav { position:fixed; top:0; left:0; right:0; height:var(--fb-nav-height); background:var(--fb-nav-bg); box-shadow:0 2px 4px rgba(0,0,0,0.08); display:flex; align-items:center; padding:0 16px; z-index:1000; gap:12px; animation:slideDown 0.3s ease; }
+        .fb-nav__logo { display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 8px; border-radius:20px; text-decoration:none; color:inherit; transition:background var(--transition); }
+        .fb-nav__logo:hover { background:var(--fb-hover-bg); }
+        .fb-nav__logo-icon { width:40px; height:40px; border-radius:50%; background:var(--fb-blue); display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:900; flex-shrink:0; }
+        .fb-nav__logo-text { font-size:26px; font-weight:700; color:var(--fb-blue); letter-spacing:-0.5px; display:none; }
+        @media(min-width:1100px){.fb-nav__logo-text{display:inline;}}
+        .fb-nav__search { flex:1; max-width:480px; margin:0 auto; position:relative; }
+        .fb-nav__search i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--fb-text-secondary); font-size:15px; pointer-events:none; }
+        .fb-nav__search input { width:100%; padding:10px 16px 10px 38px; border-radius:50px; border:none; background:var(--fb-input-bg); font-size:15px; outline:none; color:var(--fb-text); transition:background var(--transition); }
+        .fb-nav__search input:focus { background:var(--fb-white); }
+        .fb-nav__icons { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+        .fb-nav__icon-btn { width:40px; height:40px; border-radius:50%; background:var(--fb-icon-bg); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--fb-icon-color); transition:background var(--transition),transform var(--transition); position:relative; }
+        .fb-nav__icon-btn:hover { background:var(--fb-hover-bg); transform:scale(1.05); }
+        .fb-nav__icon-btn:active { transform:scale(0.95); }
+        .fb-nav__icon-btn .badge { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:var(--admin-red); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; font-weight:700; animation:bounce 0.3s ease; }
+        .fb-nav__user-btn { width:40px; height:40px; border-radius:50%; background:var(--fb-blue); color:white; font-weight:700; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; overflow:hidden; transition:transform var(--transition); }
+        .fb-nav__user-btn:hover { transform:scale(1.05); }
+        .fb-nav__user-btn img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .fb-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:var(--fb-dropdown-bg); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.2); min-width:220px; padding:8px 0; z-index:1100; display:none; animation:fadeInDown 0.18s ease; }
+        .fb-dropdown.show { display:block; }
+        .fb-dropdown__item { padding:10px 16px; cursor:pointer; font-size:14px; color:var(--fb-text); transition:background var(--transition); white-space:nowrap; display:flex; align-items:center; gap:8px; }
+        .fb-dropdown__item:hover { background:var(--fb-hover-bg); }
+        .fb-dropdown__item.danger { color:var(--admin-red); }
+        .fb-dropdown__divider { height:1px; background:var(--fb-border); margin:6px 0; }
+        @keyframes fadeInDown { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-20px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes bounce { 0%{transform:scale(0);} 50%{transform:scale(1.3);} 100%{transform:scale(1);} }
+
+        .fb-layout { display:flex; max-width:1440px; margin:0 auto; min-height:calc(100vh - var(--fb-nav-height)); padding-top:var(--fb-nav-height); animation:fadeIn 0.3s ease; }
+        .fb-sidebar-left { width:var(--sidebar-width); flex-shrink:0; padding:16px 8px; position:sticky; top:var(--fb-nav-height); height:calc(100vh - var(--fb-nav-height)); overflow-y:auto; }
+        .fb-sidebar-left__item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; color:var(--fb-text); transition:background var(--transition),color var(--transition); margin-bottom:2px; user-select:none; }
+        .fb-sidebar-left__item:hover { background:var(--fb-sidebar-item-hover); }
+        .fb-sidebar-left__item.active { background:var(--fb-sidebar-active-bg); color:var(--fb-blue); font-weight:600; }
+        .fb-sidebar-left__item:active { transform:scale(0.98); }
+        .fb-sidebar-left__icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; background:var(--fb-icon-bg); color:var(--fb-icon-color); transition:background var(--transition),color var(--transition); }
+        .fb-sidebar-left__item.active .fb-sidebar-left__icon { background:var(--fb-blue); color:#fff; }
+        .fb-sidebar-left__section-title { font-size:12px; font-weight:600; color:var(--fb-text-secondary); padding:16px 12px 8px; text-transform:uppercase; letter-spacing:0.5px; }
+        .fb-main { flex:1; max-width:680px; padding:20px 16px; min-width:0; }
+        .fb-main__section-title { font-size:18px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; color:var(--fb-text); animation:slideUp 0.3s ease; }
+
+        .fb-status-box { background:var(--fb-white); border-radius:8px; padding:14px 16px; box-shadow:var(--fb-shadow-card); margin-bottom:16px; animation:slideUp 0.3s ease; }
+        .fb-status-box__top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .fb-status-box__avatar { width:40px; height:40px; border-radius:50%; background:var(--fb-blue); color:#fff; font-weight:700; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+        .fb-status-box__avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .fb-status-box__input { flex:1; padding:10px 16px; border-radius:50px; border:none; background:var(--fb-input-bg); font-size:15px; outline:none; color:var(--fb-text); transition:background var(--transition); }
+        .fb-status-box__input:focus { background:var(--fb-white); }
+        .fb-status-box__actions { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+        .fb-btn { padding:9px 20px; border-radius:50px; border:none; cursor:pointer; font-weight:600; font-size:14px; transition:background var(--transition),transform var(--transition); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+        .fb-btn:hover { transform:scale(1.03); }
+        .fb-btn:active { transform:scale(0.97); }
+        .fb-btn--primary { background:var(--fb-blue); color:#fff; }
+        .fb-btn--primary:hover { background:var(--fb-blue-hover); }
+        .fb-btn--secondary { background:var(--fb-icon-bg); color:var(--fb-text); }
+        .fb-btn--secondary:hover { background:var(--fb-hover-bg); }
+        .fb-btn--success { background:#42B72A; color:#fff; }
+        .fb-btn--danger { background:var(--admin-red); color:#fff; }
+        .fb-btn--danger:hover { background:#c81c35; }
+        .fb-btn--warning { background:#f7b928; color:#000; }
+        .fb-btn--sm { padding:6px 14px; font-size:12px; }
+        .fb-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+        .fb-post { background:var(--fb-white); border-radius:8px; padding:16px; box-shadow:var(--fb-shadow-card); margin-bottom:16px; animation:fadeInUp 0.35s ease; position:relative; }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+        .admin-badge { background:var(--admin-red); color:#fff; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:700; display:inline-block; margin-left:6px; }
+        .fb-post__header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .fb-post__avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; color:#fff; flex-shrink:0; overflow:hidden; }
+        .fb-post__avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .fb-post__author-info { flex:1; min-width:0; }
+        .fb-post__author-name { font-weight:600; font-size:14px; color:var(--fb-text); }
+        .fb-post__time { font-size:12px; color:var(--fb-text-secondary); }
+        .fb-post__menu-btn { width:36px; height:36px; border-radius:50%; border:none; background:transparent; cursor:pointer; font-size:20px; color:var(--fb-text-secondary); display:flex; align-items:center; justify-content:center; transition:background var(--transition); }
+        .fb-post__menu-btn:hover { background:var(--fb-hover-bg); }
+        .fb-post__content { font-size:15px; line-height:1.5; margin-bottom:12px; word-wrap:break-word; color:var(--fb-text); }
+        .fb-post__image { width:100%; border-radius:8px; margin-bottom:12px; max-height:400px; object-fit:cover; }
+        .fb-post__stats { display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--fb-text-secondary); padding:8px 0; border-bottom:1px solid var(--fb-border); margin-bottom:4px; }
+        .fb-post__likes-badge { display:flex; align-items:center; gap:4px; }
+        .fb-post__likes-icon { width:18px; height:18px; border-radius:50%; background:var(--fb-blue); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+        .fb-post__actions { display:flex; align-items:center; gap:4px; padding:4px 0; border-bottom:1px solid var(--fb-border); margin-bottom:8px; }
+        .fb-post__action-btn { flex:1; padding:8px 6px; border:none; background:transparent; cursor:pointer; font-size:13px; font-weight:600; color:var(--fb-text-secondary); border-radius:6px; transition:background var(--transition),color var(--transition); display:flex; align-items:center; justify-content:center; gap:6px; }
+        .fb-post__action-btn:hover { background:var(--fb-hover-bg); }
+        .fb-post__action-btn:active { transform:scale(0.97); }
+        .fb-post__action-btn.liked { color:var(--fb-blue); }
+        .fb-post__comments-section { margin-top:8px; }
+        .fb-post__comment { display:flex; align-items:center; gap:8px; margin-bottom:10px; animation:fadeIn 0.2s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+        .fb-post__comment-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0; overflow:hidden; }
+        .fb-post__comment-bubble { background:var(--fb-comment-bg); border-radius:18px; padding:8px 14px; font-size:13px; max-width:75%; word-wrap:break-word; color:var(--fb-text); flex:1; }
+        .fb-post__comment-author { font-weight:600; font-size:12px; margin-bottom:2px; }
+        .fb-post__comment-input-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+        .fb-post__comment-input { flex:1; padding:9px 14px; border-radius:50px; border:none; background:var(--fb-input-bg); font-size:13px; outline:none; color:var(--fb-text); transition:background var(--transition); }
+        .fb-post__comment-input:focus { background:var(--fb-white); }
+
+        .fb-sidebar-right { width:var(--right-sidebar-width); flex-shrink:0; padding:16px 8px; position:sticky; top:var(--fb-nav-height); height:calc(100vh - var(--fb-nav-height)); overflow-y:auto; }
+        .fb-sidebar-right__title { font-size:12px; font-weight:600; color:var(--fb-text-secondary); padding:8px 12px; text-transform:uppercase; margin-top:4px; }
+        .fb-contact { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; cursor:pointer; transition:background var(--transition); font-size:14px; font-weight:500; color:var(--fb-text); }
+        .fb-contact:hover { background:var(--fb-hover-bg); }
+        .fb-contact:active { transform:scale(0.98); }
+        .fb-contact__avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#fff; position:relative; overflow:hidden; }
+        .fb-contact__avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .fb-contact__online-dot { position:absolute; bottom:-1px; right:-1px; width:10px; height:10px; border-radius:50%; background:#31a24c; border:2px solid var(--fb-white); }
+
+        .fb-chat-window { position:fixed; bottom:0; right:40px; width:340px; background:var(--fb-white); border-radius:10px 10px 0 0; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:2000; display:none; flex-direction:column; animation:slideUp 0.25s ease; overflow:hidden; }
+        .fb-chat-window.open { display:flex; }
+        .fb-chat-window__header { background:var(--fb-blue); color:#fff; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-weight:600; }
+        .fb-chat-window__close { background:transparent; border:none; color:#fff; font-size:16px; cursor:pointer; transition:transform var(--transition); }
+        .fb-chat-window__close:hover { transform:scale(1.2); }
+        .fb-chat-window__body { padding:14px; height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; background:var(--fb-chat-body-bg); }
+        .fb-chat-msg { padding:8px 14px; border-radius:18px; font-size:13px; max-width:80%; animation:fadeIn 0.2s ease; }
+        .fb-chat-msg--sent { background:var(--fb-blue); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+        .fb-chat-msg--received { background:var(--fb-chat-msg-received); color:var(--fb-text); align-self:flex-start; border-bottom-left-radius:4px; }
+        .fb-chat-window__input-row { display:flex; gap:8px; padding:10px; background:var(--fb-white); border-top:1px solid var(--fb-border); }
+        .fb-chat-window__input { flex:1; padding:8px 14px; border-radius:50px; border:none; background:var(--fb-input-bg); font-size:13px; color:var(--fb-text); outline:none; }
+        .fb-chat-window__input:focus { background:var(--fb-white); }
+        .fb-chat-window__send { background:var(--fb-blue); border:none; color:#fff; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition:transform var(--transition); }
+        .fb-chat-window__send:hover { transform:scale(1.1); }
+
+        .fb-card { background:var(--fb-white); border-radius:8px; padding:16px; box-shadow:var(--fb-shadow-card); margin-bottom:12px; animation:slideUp 0.3s ease; }
+        .fb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+        .fb-grid img { width:100%; border-radius:8px; cursor:pointer; max-height:150px; object-fit:cover; transition:transform var(--transition); }
+        .fb-grid img:hover { transform:scale(1.02); }
+        .fb-placeholder { background:var(--fb-white); border-radius:8px; padding:40px 20px; text-align:center; box-shadow:var(--fb-shadow-card); color:var(--fb-text); animation:slideUp 0.3s ease; }
+        .fb-placeholder i { font-size:48px; color:var(--fb-blue); margin-bottom:16px; }
+        .admin-panel { border-left:3px solid var(--admin-red); }
+        .stat-card { background:var(--fb-bg); padding:20px; border-radius:8px; text-align:center; transition:transform var(--transition); }
+        .stat-card:hover { transform:scale(1.02); }
+        .stat-number { font-size:32px; font-weight:700; color:var(--fb-blue); }
+        .stat-label { font-size:12px; color:var(--fb-text-secondary); text-transform:uppercase; margin-top:4px; }
+        .admin-user-item { display:flex; align-items:center; gap:10px; padding:12px; background:var(--fb-bg); border-radius:8px; margin-bottom:8px; transition:background var(--transition); }
+        .admin-user-item:hover { background:var(--fb-hover-bg); }
+        .admin-user-item .info { flex:1; }
+        .admin-user-item .info strong { display:block; }
+        .admin-user-item .info small { color:var(--fb-text-secondary); font-size:12px; }
+
+        .toast-message { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; z-index:9999; animation:toastIn 0.3s ease; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+        .toast-message.error { background:#e41e3f; }
+        .toast-message.success { background:#42B72A; }
+        @keyframes toastIn { from{opacity:0;transform:translate(-50%,20px);} to{opacity:1;transform:translate(-50%,0);} }
+
+        @media(max-width:1100px){.fb-sidebar-right{display:none;}}
+        @media(max-width:900px){.fb-sidebar-left{display:none;}.fb-main{max-width:100%;}}
+    </style>
+</head>
+<body>
+    <div id="authContainer" class="auth-overlay"></div>
+    <div id="appContainer" style="display:none;">
+        <nav class="fb-nav">
+            <div class="fb-nav__logo" id="navLogo"><div class="fb-nav__logo-icon">f</div><span class="fb-nav__logo-text">fakebook</span></div>
+            <div class="fb-nav__search"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Buscar en Fakebook..." autocomplete="off"></div>
+            <div class="fb-nav__icons">
+                <button class="fb-nav__icon-btn" id="btnFriendRequests"><i class="fas fa-user-plus"></i><span class="badge" id="friendReqBadge" style="display:none;">0</span></button>
+                <button class="fb-nav__icon-btn" id="btnNotifications"><i class="fas fa-bell"></i></button>
+                <button class="fb-nav__icon-btn" id="btnMenu"><i class="fas fa-bars"></i></button>
+                <button class="fb-nav__user-btn" id="btnProfile"><span id="userInitials">TU</span></button>
+            </div>
+            <div class="fb-dropdown" id="friendReqDropdown" style="right:110px;"><div class="fb-dropdown__item" style="font-weight:600;">Solicitudes de amistad</div><div id="friendReqList"></div></div>
+            <div class="fb-dropdown" id="menuDropdown" style="right:10px;">
+                <div class="fb-dropdown__item" id="darkModeToggle"><i class="fas fa-moon"></i> <span id="darkModeText">Modo oscuro</span></div>
+                <div class="fb-dropdown__divider"></div>
+                <div class="fb-dropdown__item danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</div>
+            </div>
+        </nav>
+        <div class="fb-layout">
+            <aside class="fb-sidebar-left" id="sidebarLeft">
+                <div class="fb-sidebar-left__item active" data-section="inicio"><span class="fb-sidebar-left__icon"><i class="fas fa-home"></i></span> Inicio</div>
+                <div class="fb-sidebar-left__item" data-section="usuarios"><span class="fb-sidebar-left__icon"><i class="fas fa-users"></i></span> Usuarios</div>
+                <div class="fb-sidebar-left__item" data-section="amigos"><span class="fb-sidebar-left__icon"><i class="fas fa-user-friends"></i></span> Amigos</div>
+                <div class="fb-sidebar-left__item" data-section="compartidos"><span class="fb-sidebar-left__icon"><i class="fas fa-share-alt"></i></span> Compartidos</div>
+                <div class="fb-sidebar-left__item" data-section="fotos"><span class="fb-sidebar-left__icon"><i class="fas fa-camera"></i></span> Fotos</div>
+                <div class="fb-sidebar-left__item" data-section="chat"><span class="fb-sidebar-left__icon"><i class="fas fa-comment-dots"></i></span> Chat</div>
+                <div id="adminSidebarItem" style="display:none;">
+                    <div class="fb-sidebar-left__section-title">Administración</div>
+                    <div class="fb-sidebar-left__item admin-panel" data-section="admin"><span class="fb-sidebar-left__icon"><i class="fas fa-shield-alt"></i></span> Panel Admin</div>
+                </div>
+            </aside>
+            <main class="fb-main" id="mainContent">
+                <div class="fb-main__section-title" id="sectionTitle"><i class="fas fa-home"></i> Inicio</div>
+                <div id="searchStatusBar" style="display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--fb-white);border-radius:8px;margin-bottom:16px;box-shadow:var(--fb-shadow-card);font-size:14px;color:var(--fb-text-secondary);animation:slideUp 0.3s ease;">
+                    <i class="fas fa-search"></i> Resultados para: <span id="searchQueryDisplay"></span>
+                    <button class="fb-btn fb-btn--secondary fb-btn--sm" id="clearSearchBtn" style="margin-left:auto;"><i class="fas fa-times"></i> Limpiar</button>
+                </div>
+                <div class="fb-status-box" id="statusBox">
+                    <div class="fb-status-box__top">
+                        <div class="fb-status-box__avatar" id="statusAvatar">TU</div>
+                        <input type="text" class="fb-status-box__input" id="statusInput" placeholder="¿Qué estás pensando?" maxlength="500">
+                    </div>
+                    <div id="imagePreview" style="margin-bottom:8px;display:none;"><img id="previewImg" style="max-width:100%;max-height:200px;border-radius:8px;"><button class="fb-btn fb-btn--danger fb-btn--sm" id="removeImageBtn" style="margin-top:4px;"><i class="fas fa-times"></i> Quitar imagen</button></div>
+                    <div class="fb-status-box__actions">
+                        <label class="fb-btn fb-btn--secondary fb-btn--sm" style="cursor:pointer;"><i class="fas fa-image"></i> Foto (máx. 10 MB)<input type="file" id="postImageInput" accept="image/*" style="display:none;"></label>
+                        <button class="fb-btn fb-btn--primary" id="publishBtn"><i class="fas fa-paper-plane"></i> Publicar</button>
+                    </div>
+                </div>
+                <div id="dynamicContent"></div>
+            </main>
+            <aside class="fb-sidebar-right" id="sidebarRight">
+                <div class="fb-sidebar-right__title">Contactos</div>
+                <div id="contactsList"></div>
+            </aside>
+        </div>
+        <div class="fb-chat-window" id="chatWindow">
+            <div class="fb-chat-window__header"><span id="chatContactName">Chat</span><button class="fb-chat-window__close" id="chatCloseBtn"><i class="fas fa-times"></i></button></div>
+            <div class="fb-chat-window__body" id="chatBody"></div>
+            <div class="fb-chat-window__input-row"><input type="text" class="fb-chat-window__input" id="chatInput" placeholder="Escribe un mensaje..."><button class="fb-chat-window__send" id="chatSendBtn"><i class="fas fa-paper-plane"></i></button></div>
+        </div>
+    </div>
+    <script>
+        (function(){
+            // 🔥 CONFIGURACIÓN - Frontend en EC2
+            const API_URL = '';
+            const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+
+            let authToken = localStorage.getItem('fb_token') || null;
+            let currentUser = JSON.parse(localStorage.getItem('fb_user') || 'null');
+            let postImageData = null;
+            let currentChatUserId = null;
+            let currentChatUserName = '';
+
+            function showToast(message, type = 'info') {
+                const existing = document.querySelector('.toast-message');
+                if (existing) existing.remove();
+                const toast = document.createElement('div');
+                toast.className = `toast-message ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+
+            async function apiCall(endpoint, method = 'GET', body = null) {
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+                const config = { method, headers };
+                if (body) config.body = JSON.stringify(body);
+                const response = await fetch(`${API_URL}${endpoint}`, config);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || data.message || 'Error del servidor');
+                return data;
+            }
+
+            function getInitials(n){ const p=n.trim().split(' '); return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():n.substring(0,2).toUpperCase(); }
+            function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+            function timeAgo(d){ const s=Math.floor((Date.now()-new Date(d).getTime())/1000); if(s<60)return'Ahora mismo'; const m=Math.floor(s/60); if(m<60)return`Hace ${m} min`; const h=Math.floor(m/60); if(h<24)return`Hace ${h} h`; return`Hace ${Math.floor(h/24)} d`; }
+
+            function renderAuth(mode='login'){
+                const isLogin = mode === 'login';
+                document.getElementById('authContainer').innerHTML = `
+                    <div class="auth-box"><h2>${isLogin ? 'Iniciar sesión' : 'Registrarse'}</h2>
+                    <div class="auth-error" id="authError"></div>
+                    ${isLogin ? `
+                        <input class="auth-input" id="authUsername" placeholder="Nombre de usuario">
+                    ` : `
+                        <input class="auth-input" id="authName" placeholder="Nombre completo">
+                        <input class="auth-input" id="authUsername" placeholder="Nombre de usuario">
+                    `}
+                    <input class="auth-input" id="authPassword" type="password" placeholder="Contraseña">
+                    <button class="auth-btn" id="authBtn">${isLogin ? 'Entrar' : 'Crear cuenta'}</button>
+                    <p class="auth-link" id="authSwitch">${isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}</p></div>`;
+                document.getElementById('authSwitch').onclick = () => renderAuth(isLogin ? 'register' : 'login');
+                document.getElementById('authBtn').onclick = async () => {
+                    const btn = document.getElementById('authBtn');
+                    const errEl = document.getElementById('authError');
+                    errEl.textContent = '';
+                    btn.disabled = true;
+                    btn.textContent = 'Procesando...';
+                    try {
+                        if (isLogin) {
+                            const username = document.getElementById('authUsername').value.trim();
+                            const password = document.getElementById('authPassword').value.trim();
+                            if (!username || !password) throw new Error('Completa todos los campos.');
+                            const data = await apiCall('/api/login', 'POST', { username, password });
+                            saveSession(data.token, data.user);
+                            showApp();
+                        } else {
+                            const full_name = document.getElementById('authName').value.trim();
+                            const username = document.getElementById('authUsername').value.trim();
+                            const password = document.getElementById('authPassword').value.trim();
+                            if (!full_name || !username || !password) throw new Error('Completa todos los campos.');
+                            const avatar_color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                            const data = await apiCall('/api/register', 'POST', { full_name, username, password, avatar_color });
+                            saveSession(data.token, data.user);
+                            showApp();
+                        }
+                    } catch (error) {
+                        errEl.textContent = error.message;
+                        btn.disabled = false;
+                        btn.textContent = isLogin ? 'Entrar' : 'Crear cuenta';
+                    }
+                };
+            }
+
+            function saveSession(token, user) {
+                authToken = token; currentUser = user;
+                localStorage.setItem('fb_token', token);
+                localStorage.setItem('fb_user', JSON.stringify(user));
+            }
+
+            function clearSession() {
+                authToken = null; currentUser = null;
+                localStorage.removeItem('fb_token'); localStorage.removeItem('fb_user');
+            }
+
+            function logout(){
+                clearSession();
+                document.getElementById('appContainer').style.display = 'none';
+                document.getElementById('authContainer').style.display = '';
+                document.getElementById('chatWindow').classList.remove('open');
+                currentChatUserId = null;
+                renderAuth('login');
+            }
+
+            function applyDark(e){
+                document.body.classList.toggle('dark-mode', e);
+                document.getElementById('darkModeText').textContent = e ? 'Modo claro' : 'Modo oscuro';
+                document.querySelector('#darkModeToggle i').className = e ? 'fas fa-sun' : 'fas fa-moon';
+                localStorage.setItem('fb_dark_mode', e);
+            }
+            applyDark(localStorage.getItem('fb_dark_mode') === 'true');
+
+            function showApp(){
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = '';
+                document.getElementById('adminSidebarItem').style.display = currentUser.isAdmin ? '' : 'none';
+                updateUserUI();
+                loadSection('inicio');
+                loadContacts();
+                updateFriendReqBadge();
+            }
+
+            function updateUserUI(){
+                const ini = getInitials(currentUser.full_name);
+                document.getElementById('userInitials').textContent = ini;
+                document.getElementById('statusAvatar').innerHTML = currentUser.profile_pic ? `<img src="${currentUser.profile_pic}">` : ini;
+                document.getElementById('statusInput').placeholder = `¿Qué estás pensando, ${currentUser.full_name.split(' ')[0]}?`;
+                document.getElementById('btnProfile').innerHTML = currentUser.profile_pic ? `<img src="${currentUser.profile_pic}">` : ini;
+            }
+
+            function loadSection(s){
+                document.querySelectorAll('.fb-sidebar-left__item').forEach(i => i.classList.remove('active'));
+                const item = document.querySelector(`.fb-sidebar-left__item[data-section="${s}"]`);
+                if (item) item.classList.add('active');
+                const icons = { inicio:'fa-home', usuarios:'fa-users', amigos:'fa-user-friends', compartidos:'fa-share-alt', fotos:'fa-camera', chat:'fa-comment-dots', perfil:'fa-user', admin:'fa-shield-alt' };
+                const names = { inicio:'Inicio', usuarios:'Usuarios', amigos:'Amigos', compartidos:'Compartidos', fotos:'Fotos', chat:'Chat', perfil:'Perfil', admin:'Panel Admin' };
+                document.getElementById('sectionTitle').innerHTML = `<i class="fas ${icons[s]||'fa-cog'}"></i> ${names[s]||s}`;
+                document.getElementById('statusBox').style.display = (s === 'inicio') ? '' : 'none';
+                document.getElementById('searchStatusBar').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+                if (s === 'inicio') loadPosts();
+                else if (s === 'perfil') loadProfile();
+                else if (s === 'usuarios') loadUsers();
+                else if (s === 'amigos') loadFriends();
+                else if (s === 'compartidos') loadShares();
+                else if (s === 'fotos') loadPhotos();
+                else if (s === 'chat') loadChatList();
+                else if (s === 'admin') loadAdminPanel();
+            }
+
+            // ═══════════════ POSTS ═══════════════
+            async function loadPosts(filter = ''){
+                try {
+                    const endpoint = filter ? `/api/posts?search=${encodeURIComponent(filter)}` : '/api/posts';
+                    const posts = await apiCall(endpoint);
+                    renderPosts(posts);
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            function renderPosts(posts){
+                const c = document.getElementById('dynamicContent');
+                if (!posts || !posts.length){ c.innerHTML = '<div class="fb-placeholder"><i class="far fa-newspaper"></i><h3>No hay publicaciones</h3></div>'; return; }
+                c.innerHTML = posts.map(p => {
+                    const likes = p.likes || [];
+                    const liked = likes.some(l => l.user_id === currentUser.id);
+                    const comments = p.comments || [];
+                    const pic = p.author_profile_pic || '';
+                    const isAuthor = p.author_id === currentUser.id;
+                    const isAdmin = currentUser.isAdmin;
+                    const canDelete = isAuthor || isAdmin;
+                    return `<div class="fb-post" data-post-id="${p.id}">
+                        <div class="fb-post__header">
+                            <div class="fb-post__avatar" style="background:${p.author_color||'#1877F2'};">${pic?`<img src="${pic}">`:getInitials(p.author_name)}</div>
+                            <div class="fb-post__author-info"><div class="fb-post__author-name">${esc(p.author_name)}${p.author_isAdmin?' <span class="admin-badge">ADMIN</span>':''}</div><div class="fb-post__time">${timeAgo(p.created_at)}</div></div>
+                            ${canDelete?`<button class="fb-post__menu-btn" data-action="delete"><i class="fas fa-ellipsis-h"></i></button>`:''}
+                        </div>
+                        <div class="fb-post__content">${esc(p.content)}</div>${p.image?`<img src="${p.image}" class="fb-post__image">`:''}
+                        <div class="fb-post__stats"><div class="fb-post__likes-badge"><span class="fb-post__likes-icon"><i class="fas fa-thumbs-up"></i></span><span>${likes.length}</span></div><span>${comments.length} comentario(s)</span></div>
+                        <div class="fb-post__actions">
+                            <button class="fb-post__action-btn like-btn ${liked?'liked':''}" data-action="like"><i class="${liked?'fas':'far'} fa-thumbs-up"></i> Me gusta</button>
+                            <button class="fb-post__action-btn comment-btn"><i class="far fa-comment"></i> Comentar</button>
+                            <button class="fb-post__action-btn share-btn" data-action="share"><i class="fas fa-share"></i> Compartir</button>
+                        </div>
+                        <div class="fb-post__comments-section">
+                            <div class="fb-post__comments-list">${comments.map(c => {
+                                const canDeleteComment = currentUser.isAdmin || c.author_id === currentUser.id;
+                                return `<div class="fb-post__comment" data-comment-id="${c.id}" data-comment-author-id="${c.author_id}">
+                                    <div class="fb-post__comment-avatar" style="background:${c.author_color||'#ccc'};">${getInitials(c.author_name)}</div>
+                                    <div class="fb-post__comment-bubble">
+                                        <div class="fb-post__comment-author">${esc(c.author_name)}</div>
+                                        ${esc(c.text)}
+                                    </div>
+                                    ${canDeleteComment ? `<button class="fb-btn fb-btn--danger fb-btn--sm delete-comment-btn" data-comment-id="${c.id}" data-comment-author-id="${c.author_id}"><i class="fas fa-times"></i></button>` : ''}
+                                </div>`;
+                            }).join('')}</div>
+                            <div class="fb-post__comment-input-row"><input type="text" class="fb-post__comment-input" placeholder="Escribe un comentario..."><button class="fb-btn fb-btn--primary fb-btn--sm"><i class="fas fa-paper-plane"></i></button></div>
+                        </div>
+                    </div>`;
+                }).join('');
+                attachPostEvents();
+            }
+
+            function attachPostEvents(){
+                document.querySelectorAll('.fb-post').forEach(el => {
+                    const pid = el.dataset.postId;
+                    
+                    el.querySelector('.like-btn')?.addEventListener('click', async () => { 
+                        try { 
+                            await apiCall(`/api/posts/${pid}/like`, 'POST'); 
+                            loadPosts(document.getElementById('searchInput').value); 
+                        } catch(e){ 
+                            showToast('Error al dar like', 'error');
+                        } 
+                    });
+                    
+                    el.querySelector('.share-btn')?.addEventListener('click', async () => { 
+                        try { 
+                            await apiCall(`/api/posts/${pid}/share`, 'POST'); 
+                            showToast('✅ Publicación compartida exitosamente!', 'success');
+                        } catch(e){ 
+                            showToast('Error: ' + e.message, 'error');
+                        } 
+                    });
+                    
+                    el.querySelector('.comment-btn')?.addEventListener('click', () => el.querySelector('.fb-post__comment-input').focus());
+                    
+                    const sbtn = el.querySelector('.fb-post__comment-input-row .fb-btn');
+                    const inp = el.querySelector('.fb-post__comment-input');
+                    sbtn?.addEventListener('click', async () => { 
+                        if(!inp.value.trim())return; 
+                        try { 
+                            await apiCall(`/api/posts/${pid}/comments`, 'POST', { text: inp.value.trim() }); 
+                            inp.value=''; 
+                            loadPosts(document.getElementById('searchInput').value); 
+                        } catch(e){ 
+                            showToast('Error al comentar', 'error');
+                        } 
+                    });
+                    inp?.addEventListener('keypress', e => { if(e.key==='Enter') sbtn.click(); });
+                    
+                    el.querySelector('[data-action="delete"]')?.addEventListener('click', async () => { 
+                        if(!confirm('¿Eliminar esta publicación?'))return; 
+                        try { 
+                            await apiCall(`/api/posts/${pid}`, 'DELETE'); 
+                            loadPosts(document.getElementById('searchInput').value); 
+                        } catch(e){ 
+                            showToast('Error al eliminar', 'error');
+                        } 
+                    });
+                });
+                
+                document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const commentId = btn.dataset.commentId;
+                        const commentAuthorId = parseInt(btn.dataset.commentAuthorId);
+                        const currentUserId = currentUser.id;
+                        const isAdminUser = currentUser.isAdmin;
+                        
+                        if (!isAdminUser && commentAuthorId !== currentUserId) {
+                            showToast('❌ No es tu comentario. No puedes borrarlo.', 'error');
+                            return;
+                        }
+                        
+                        if(!confirm('¿Eliminar este comentario?'))return;
+                        try {
+                            await apiCall(`/api/admin/comments/${commentId}`, 'DELETE');
+                            loadPosts(document.getElementById('searchInput').value);
+                            showToast('✅ Comentario eliminado', 'success');
+                        } catch(e){ 
+                            showToast('Error al eliminar comentario', 'error');
+                        }
+                    });
+                });
+            }
+
+            document.getElementById('publishBtn').addEventListener('click', async () => {
+                const content = document.getElementById('statusInput').value.trim();
+                if(!content && !postImageData) return;
+                try { await apiCall('/api/posts', 'POST', { content, image: postImageData }); document.getElementById('statusInput').value=''; postImageData=null; document.getElementById('imagePreview').style.display='none'; document.getElementById('previewImg').src=''; document.getElementById('postImageInput').value=''; loadPosts(); showToast('✅ Publicación creada', 'success'); } catch(e){ showToast('Error: '+e.message, 'error'); }
+            });
+
+            document.getElementById('postImageInput').addEventListener('change', e => {
+                const f = e.target.files[0]; if(!f)return;
+                if(f.size > MAX_IMAGE_SIZE){ showToast(`⚠️ Máximo 10 MB. Tu imagen: ${(f.size/1024/1024).toFixed(2)} MB`, 'error'); e.target.value=''; return; }
+                const r = new FileReader(); r.onload = ev => { postImageData=ev.target.result; document.getElementById('previewImg').src=postImageData; document.getElementById('imagePreview').style.display='block'; }; r.readAsDataURL(f);
+            });
+
+            document.getElementById('removeImageBtn').addEventListener('click', () => { postImageData=null; document.getElementById('imagePreview').style.display='none'; document.getElementById('postImageInput').value=''; });
+            document.getElementById('searchInput').addEventListener('input', e => { const q=e.target.value; document.getElementById('searchStatusBar').style.display=q.trim()?'flex':'none'; document.getElementById('searchQueryDisplay').textContent=q.trim()?`"${q.trim()}"`:''; loadPosts(q); });
+            document.getElementById('clearSearchBtn').addEventListener('click', () => { document.getElementById('searchInput').value=''; document.getElementById('searchStatusBar').style.display='none'; loadPosts(); });
+
+            // ═══════════════ PERFIL ═══════════════
+            function loadProfile(){
+                document.getElementById('dynamicContent').innerHTML = `<div class="fb-card" style="text-align:center;">
+                    <div style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:var(--fb-blue);color:#fff;font-size:48px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;" id="profilePicContainer">${currentUser.profile_pic?`<img src="${currentUser.profile_pic}" style="width:100%;height:100%;object-fit:cover;">`:getInitials(currentUser.full_name)}</div>
+                    <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+                    <h2 style="margin-top:12px;">${esc(currentUser.full_name)}${currentUser.isAdmin?' 🔰':''}</h2><p>@${esc(currentUser.username)}</p>
+                    <button class="fb-btn fb-btn--secondary fb-btn--sm" id="changeProfilePicBtn"><i class="fas fa-camera"></i> Cambiar foto</button></div>`;
+                document.getElementById('changeProfilePicBtn').addEventListener('click', ()=>document.getElementById('profilePicInput').click());
+                document.getElementById('profilePicContainer').addEventListener('click', ()=>document.getElementById('profilePicInput').click());
+                document.getElementById('profilePicInput').addEventListener('change', async e => {
+                    const f=e.target.files[0]; if(!f)return;
+                    if(f.size>MAX_IMAGE_SIZE){ showToast('⚠️ Máximo 10 MB.', 'error'); return; }
+                    const r=new FileReader(); r.onload=async ev=>{ try{ await apiCall('/api/users/profile','PUT',{profile_pic:ev.target.result}); currentUser.profile_pic=ev.target.result; localStorage.setItem('fb_user',JSON.stringify(currentUser)); updateUserUI(); loadProfile(); showToast('✅ Foto de perfil actualizada', 'success'); }catch(e){ showToast('Error', 'error'); } }; r.readAsDataURL(f);
+                });
+            }
+
+            // ═══════════════ USUARIOS ═══════════════
+            async function loadUsers(){
+                try {
+                    const users = await apiCall('/api/users');
+                    document.getElementById('dynamicContent').innerHTML = users.length ? users.map(u => {
+                        let buttonHtml = '';
+                        if (u.friendship_status === 'friends') {
+                            buttonHtml = `<span class="fb-btn fb-btn--success fb-btn--sm" disabled><i class="fas fa-check"></i> Amigos</span>`;
+                        } else if (u.friendship_status === 'sent') {
+                            buttonHtml = `<span class="fb-btn fb-btn--secondary fb-btn--sm" disabled><i class="fas fa-clock"></i> Enviada</span>`;
+                        } else if (u.friendship_status === 'received') {
+                            buttonHtml = `<button class="fb-btn fb-btn--success fb-btn--sm accept-friend-btn" data-uid="${u.id}"><i class="fas fa-check"></i> Aceptar</button>`;
+                        } else {
+                            buttonHtml = `<button class="fb-btn fb-btn--primary fb-btn--sm send-friend-req" data-uid="${u.id}"><i class="fas fa-user-plus"></i> Solicitud</button>`;
+                        }
+                        return `<div class="fb-card" style="display:flex;align-items:center;gap:10px;">
+                            <div class="fb-contact__avatar" style="background:${u.avatar_color};">${u.profile_pic?`<img src="${u.profile_pic}">`:getInitials(u.full_name)}${u.online?'<span class="fb-contact__online-dot"></span>':''}</div>
+                            <div style="flex:1;"><strong>${esc(u.full_name)}</strong><br><small>@${esc(u.username)}</small></div>
+                            ${buttonHtml}
+                        </div>`;
+                    }).join('') : '<div class="fb-placeholder"><i class="fas fa-users"></i><h3>No hay usuarios</h3></div>';
+                    
+                    document.querySelectorAll('.send-friend-req').forEach(btn => {
+                        btn.addEventListener('click', async function(){
+                            try {
+                                await apiCall('/api/friends/request', 'POST', { user_id: this.dataset.uid });
+                                this.textContent = '✓ Enviada';
+                                this.classList.remove('fb-btn--primary');
+                                this.classList.add('fb-btn--secondary');
+                                this.disabled = true;
+                                showToast('✅ Solicitud enviada', 'success');
+                            } catch(e) { showToast(e.message, 'error'); }
+                        });
+                    });
+                    
+                    document.querySelectorAll('.accept-friend-btn').forEach(btn => {
+                        btn.addEventListener('click', async function(){
+                            try {
+                                await apiCall('/api/friends/accept', 'POST', { user_id: this.dataset.uid });
+                                loadUsers();
+                                loadFriends();
+                                loadContacts();
+                                updateFriendReqBadge();
+                                showToast('✅ Solicitud aceptada', 'success');
+                            } catch(e) { showToast(e.message, 'error'); }
+                        });
+                    });
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            // ═══════════════ AMIGOS ═══════════════
+            async function loadFriends(){
+                try {
+                    const friends = await apiCall('/api/friends');
+                    document.getElementById('dynamicContent').innerHTML = friends.length ? friends.map(f => `
+                        <div class="fb-card" style="display:flex;align-items:center;gap:10px;">
+                            <div class="fb-contact__avatar" style="background:${f.avatar_color};">${f.profile_pic?`<img src="${f.profile_pic}">`:getInitials(f.full_name)}${f.online?'<span class="fb-contact__online-dot"></span>':''}</div>
+                            <div style="flex:1;"><strong>${esc(f.full_name)}</strong><br><small>@${esc(f.username)}</small></div>
+                            <span style="color:#42B72A;"><i class="fas fa-check"></i> Amigos</span>
+                            <button class="fb-btn fb-btn--primary fb-btn--sm chat-with-btn" data-uid="${f.id}" data-name="${esc(f.full_name)}"><i class="fas fa-comment"></i> Chat</button>
+                        </div>`).join('') : '<div class="fb-placeholder"><i class="fas fa-user-friends"></i><h3>No tienes amigos</h3><p>Ve a Usuarios para enviar solicitudes.</p></div>';
+                    
+                    document.querySelectorAll('.chat-with-btn').forEach(btn => {
+                        btn.addEventListener('click', function(){
+                            currentChatUserId = this.dataset.uid;
+                            currentChatUserName = this.dataset.name;
+                            openChat(currentChatUserId, currentChatUserName);
+                        });
+                    });
+                } catch(e) {
+                    document.getElementById('dynamicContent').innerHTML = '<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3></div>';
+                }
+            }
+
+            // ═══════════════ COMPARTIDOS ═══════════════
+            async function loadShares(){
+                try {
+                    const shares = await apiCall(`/api/users/${currentUser.id}/shares`);
+                    if (!shares || !shares.length) {
+                        document.getElementById('dynamicContent').innerHTML = '<div class="fb-placeholder"><i class="fas fa-share-alt"></i><h3>No has compartido nada</h3><p>Comparte publicaciones para que aparezcan aquí.</p></div>';
+                        return;
+                    }
+                    renderPosts(shares);
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            // ═══════════════ FOTOS ═══════════════
+            async function loadPhotos(){
+                try {
+                    const photos = await apiCall(`/api/users/${currentUser.id}/photos`);
+                    let html = '<div class="fb-card"><h3>📸 Mis Fotos</h3>';
+                    if (photos.profile_pic) {
+                        html += `<div style="margin:12px 0;"><strong>Foto de perfil</strong><br><img src="${photos.profile_pic}" style="max-width:200px;border-radius:8px;margin-top:8px;"></div>`;
+                    }
+                    if (photos.posts && photos.posts.length) {
+                        html += `<div style="margin:12px 0;"><strong>Fotos de mis publicaciones</strong></div><div class="fb-grid">`;
+                        photos.posts.forEach(p => {
+                            html += `<div><img src="${p.image}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="window.open('${p.image}','_blank')"></div>`;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<p style="color:var(--fb-text-secondary);">No tienes fotos en tus publicaciones.</p>';
+                    }
+                    html += '</div>';
+                    document.getElementById('dynamicContent').innerHTML = html;
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            // ═══════════════ CHAT ═══════════════
+            async function loadChatList(){
+                try {
+                    const friends = await apiCall('/api/friends');
+                    let html = '<div class="fb-card"><h3>💬 Chats</h3>';
+                    if (!friends.length) {
+                        html += '<p style="color:var(--fb-text-secondary);">No tienes amigos para chatear.</p>';
+                    } else {
+                        friends.forEach(f => {
+                            html += `
+                                <div class="fb-contact" onclick="window.openChat(${f.id}, '${esc(f.full_name)}')" style="padding:12px;border-bottom:1px solid var(--fb-border);">
+                                    <div class="fb-contact__avatar" style="background:${f.avatar_color};">${f.profile_pic?`<img src="${f.profile_pic}">`:getInitials(f.full_name)}${f.online?'<span class="fb-contact__online-dot"></span>':''}</div>
+                                    <span style="flex:1;">${esc(f.full_name)}</span>
+                                    <i class="fas fa-chevron-right" style="color:var(--fb-text-secondary);"></i>
+                                </div>
+                            `;
+                        });
+                    }
+                    html += '</div>';
+                    document.getElementById('dynamicContent').innerHTML = html;
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            window.openChat = function(userId, userName){
+                currentChatUserId = userId;
+                currentChatUserName = userName;
+                openChat(userId, userName);
+            };
+
+            async function openChat(userId, userName){
+                document.getElementById('chatContactName').textContent = userName;
+                document.getElementById('chatWindow').classList.add('open');
+                document.getElementById('chatBody').innerHTML = '';
+                
+                try {
+                    const messages = await apiCall(`/api/messages/${userId}`);
+                    messages.forEach(m => {
+                        const isSent = m.sender_id === currentUser.id;
+                        document.getElementById('chatBody').innerHTML += `<div class="fb-chat-msg fb-chat-msg--${isSent?'sent':'received'}">${esc(m.message)}</div>`;
+                    });
+                    document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight;
+                } catch(e) {
+                    console.log('Error cargando mensajes:', e);
+                }
+            }
+
+            document.getElementById('chatCloseBtn').addEventListener('click', () => { 
+                document.getElementById('chatWindow').classList.remove('open'); 
+                currentChatUserId = null;
+            });
+
+            document.getElementById('chatSendBtn').addEventListener('click', async () => {
+                const inp = document.getElementById('chatInput');
+                if(!inp.value.trim() || !currentChatUserId) return;
+                try {
+                    await apiCall('/api/messages', 'POST', { 
+                        receiver_id: currentChatUserId, 
+                        message: inp.value.trim() 
+                    });
+                    document.getElementById('chatBody').innerHTML += `<div class="fb-chat-msg fb-chat-msg--sent">${esc(inp.value)}</div>`;
+                    inp.value = '';
+                    document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight;
+                } catch(e) { showToast('Error enviando mensaje', 'error'); }
+            });
+
+            document.getElementById('chatInput').addEventListener('keypress', e => { if(e.key==='Enter') document.getElementById('chatSendBtn').click(); });
+
+            // ═══════════════ ADMIN PANEL ═══════════════
+            async function loadAdminPanel(){
+                try {
+                    const stats = await apiCall('/api/admin/stats');
+                    const users = await apiCall('/api/admin/users');
+                    
+                    let html = `
+                        <div class="fb-card">
+                            <h3>📊 Estadísticas</h3>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:12px;">
+                                <div class="stat-card"><div class="stat-number">${stats.users}</div><div class="stat-label">Usuarios</div></div>
+                                <div class="stat-card"><div class="stat-number">${stats.posts}</div><div class="stat-label">Publicaciones</div></div>
+                                <div class="stat-card"><div class="stat-number">${stats.comments}</div><div class="stat-label">Comentarios</div></div>
+                                <div class="stat-card"><div class="stat-number">${stats.admins}</div><div class="stat-label">Administradores</div></div>
+                            </div>
+                        </div>
+                        <div class="fb-card">
+                            <h3>👥 Usuarios Registrados</h3>
+                            ${users.map(u => `
+                                <div class="admin-user-item">
+                                    <div class="fb-contact__avatar" style="background:${u.avatar_color};">${u.profile_pic?`<img src="${u.profile_pic}">`:getInitials(u.full_name)}</div>
+                                    <div class="info"><strong>${esc(u.full_name)}</strong><small>@${esc(u.username)} • ${u.online?'🟢 En línea':'⚪ Desconectado'}</small></div>
+                                    <button class="fb-btn fb-btn--danger fb-btn--sm admin-delete-user" data-uid="${u.id}"><i class="fas fa-trash"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('dynamicContent').innerHTML = html;
+                    
+                    document.querySelectorAll('.admin-delete-user').forEach(btn => {
+                        btn.addEventListener('click', async function(){
+                            if(!confirm('¿Eliminar este usuario y todas sus publicaciones?'))return;
+                            try {
+                                await apiCall(`/api/admin/users/${this.dataset.uid}`, 'DELETE');
+                                loadAdminPanel();
+                                showToast('✅ Usuario eliminado', 'success');
+                            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+                        });
+                    });
+                } catch (error) {
+                    document.getElementById('dynamicContent').innerHTML = `<div class="fb-placeholder"><i class="fas fa-exclamation-triangle"></i><h3>Error</h3><p>${error.message}</p></div>`;
+                }
+            }
+
+            // ═══════════════ CONTACTOS ═══════════════
+            async function loadContacts(){
+                try {
+                    const friends = await apiCall('/api/friends');
+                    document.getElementById('contactsList').innerHTML = friends.length ? friends.map(f => `
+                        <div class="fb-contact" onclick="window.openChat(${f.id}, '${esc(f.full_name)}')">
+                            <div class="fb-contact__avatar" style="background:${f.avatar_color};">${f.profile_pic?`<img src="${f.profile_pic}">`:getInitials(f.full_name)}${f.online?'<span class="fb-contact__online-dot"></span>':''}</div>
+                            <span>${esc(f.full_name)}</span>
+                        </div>`).join('') : '<p style="color:var(--fb-text-secondary);padding:0 12px;">Agrega amigos</p>';
+                } catch(e) {
+                    document.getElementById('contactsList').innerHTML = '<p style="color:var(--fb-text-secondary);">Error</p>';
+                }
+            }
+
+            // ═══════════════ SOLICITUDES ═══════════════
+            async function updateFriendReqBadge(){
+                try {
+                    const requests = await apiCall('/api/friends/requests');
+                    const badge = document.getElementById('friendReqBadge');
+                    badge.textContent = requests.length;
+                    badge.style.display = requests.length > 0 ? 'flex' : 'none';
+                    
+                    const list = document.getElementById('friendReqList');
+                    list.innerHTML = requests.length ? requests.map(r => `
+                        <div class="fb-dropdown__item">
+                            <span>${esc(r.full_name)} (@${esc(r.username)})</span>
+                            <button class="fb-btn fb-btn--success fb-btn--sm accept-friend-btn" data-uid="${r.user1_id}" style="margin-left:auto;">Aceptar</button>
+                        </div>`).join('') : '<div class="fb-dropdown__item">No hay solicitudes</div>';
+                    
+                    document.querySelectorAll('.accept-friend-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            try {
+                                await apiCall('/api/friends/accept', 'POST', { user_id: btn.dataset.uid });
+                                updateFriendReqBadge();
+                                loadFriends();
+                                loadContacts();
+                                loadUsers();
+                                showToast('✅ Solicitud aceptada', 'success');
+                            } catch(err) { showToast(err.message, 'error'); }
+                        });
+                    });
+                } catch(e) { console.log('Error badge:', e); }
+            }
+
+            // ═══════════════ EVENTOS GLOBALES ═══════════════
+            document.getElementById('sidebarLeft').addEventListener('click', e => { const item=e.target.closest('.fb-sidebar-left__item'); if(item) loadSection(item.dataset.section); });
+            document.getElementById('navLogo').addEventListener('click', () => loadSection('inicio'));
+            document.getElementById('btnProfile').addEventListener('click', () => loadSection('perfil'));
+            document.getElementById('darkModeToggle').addEventListener('click', () => { applyDark(!document.body.classList.contains('dark-mode')); document.getElementById('menuDropdown').classList.remove('show'); });
+            document.getElementById('logoutBtn').addEventListener('click', () => { document.getElementById('menuDropdown').classList.remove('show'); logout(); });
+            document.getElementById('btnFriendRequests').addEventListener('click', e => { e.stopPropagation(); document.getElementById('friendReqDropdown').classList.toggle('show'); updateFriendReqBadge(); });
+            document.getElementById('btnMenu').addEventListener('click', e => { e.stopPropagation(); document.getElementById('menuDropdown').classList.toggle('show'); });
+            document.addEventListener('click', () => { document.querySelectorAll('.fb-dropdown').forEach(d => d.classList.remove('show')); });
+
+            // ═══════════════ INICIAR ═══════════════
+            if (currentUser && authToken) { showApp(); } else { renderAuth('login'); }
+        })();
+    </script>
+</body>
+</html>
