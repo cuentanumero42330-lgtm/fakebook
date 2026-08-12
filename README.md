@@ -32,5 +32,5 @@ Fakebook es una red social desarrollada como proyecto académico para la asignat
 
 ### 1. Clonar repositorio
 ```bash
-git clone https://github.com/TU_USUARIO/fakebook.git
+git clone https://github.com/cuentanumero7237/fakebook.git
 cd fakebook
